@@ -1,0 +1,8 @@
+package com.warehouse.robot_service.exception;
+
+public class ResourceNotFoundException extends RuntimeException {
+
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
