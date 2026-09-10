@@ -1,44 +1,26 @@
 package com.warehouse.orchestrator_service.service;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.*;
 
-@Service
-@RequiredArgsConstructor
-public class InventoryClient {
+@FeignClient(name = "inventory-service")
+public interface InventoryClient {
 
-    private final RestClient restClient;
+    @GetMapping("/api/inventory/{productCode}/check")
+    Boolean checkStock(
+            @PathVariable String productCode,
+            @RequestParam int quantity
+    );
 
-    public boolean checkStock(String productCode, int quantity) {
-        Boolean result = restClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/api/inventory/{productCode}/check")
-                        .queryParam("quantity", quantity)
-                        .build(productCode))
-                .retrieve()
-                .body(Boolean.class);
+    @PostMapping("/api/inventory/{productCode}/reserve")
+    void reserveStock(
+            @PathVariable String productCode,
+            @RequestParam int quantity
+    );
 
-        return Boolean.TRUE.equals(result);
-    }
-
-    public void reserveStock(String productCode, int quantity) {
-        restClient.post()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/api/inventory/{productCode}/reserve")
-                        .queryParam("quantity", quantity)
-                        .build(productCode))
-                .retrieve()
-                .toBodilessEntity();
-    }
-
-    public void releaseStock(String productCode, int quantity) {
-        restClient.post()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/api/inventory/{productCode}/release")
-                        .queryParam("quantity", quantity)
-                        .build(productCode))
-                .retrieve()
-                .toBodilessEntity();
-    }
+    @PostMapping("/api/inventory/{productCode}/release")
+    void releaseStock(
+            @PathVariable String productCode,
+            @RequestParam int quantity
+    );
 }

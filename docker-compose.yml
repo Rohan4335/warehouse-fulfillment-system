@@ -1,0 +1,90 @@
+services:
+
+  postgres:
+    image: postgres:17
+    container_name: warehouse-postgres
+    environment:
+      POSTGRES_DB: warehouse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  eureka-server:
+    build: ./eureka-server
+    container_name: warehouse-eureka
+    ports:
+      - "8761:8761"
+
+  inventory-service:
+    build: ./inventory-service
+    container_name: warehouse-inventory
+    depends_on:
+      - postgres
+      - eureka-server
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      DB_URL: jdbc:postgresql://postgres:5432/warehouse
+    ports:
+      - "8081:8081"
+
+  order-service:
+    build: ./order-service
+    container_name: warehouse-order
+    depends_on:
+      - postgres
+      - eureka-server
+      - inventory-service
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      DB_URL: jdbc:postgresql://postgres:5432/warehouse
+    ports:
+      - "8080:8080"
+
+  robot-service:
+    build: ./robot-service
+    container_name: warehouse-robot
+    depends_on:
+      - postgres
+      - eureka-server
+      - inventory-service
+      - order-service
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      DB_URL: jdbc:postgresql://postgres:5432/warehouse
+    ports:
+      - "8082:8082"
+
+  orchestrator-service:
+    build: ./orchestrator-service
+    container_name: warehouse-orchestrator
+    depends_on:
+      - eureka-server
+      - inventory-service
+      - robot-service
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+    ports:
+      - "8083:8083"
+
+  gateway-service:
+    build: ./gateway-service
+    container_name: warehouse-gateway
+    depends_on:
+      - eureka-server
+      - order-service
+      - inventory-service
+      - robot-service
+      - orchestrator-service
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+    ports:
+      - "8084:8084"
+
+volumes:
+  postgres_data:
